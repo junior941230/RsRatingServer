@@ -113,4 +113,9 @@ class FinMindApi:
         """取得最新的交易日期"""
         today = datetime.datetime.today().strftime("%Y-%m-%d")
         dateDf = self.api.taiwan_stock_trading_date(end_date=today)
-        return dateDf.tail(1)["date"].iloc[0]
+        latestTradingDay = dateDf.tail(1)["date"].iloc[0]
+        #如果在下午三點前就回傳前一天的日期，確保不會在交易日當天就從 API 取得資料，避免資料不完整
+        currentTime = datetime.datetime.now().time()
+        if currentTime < datetime.time(15, 0):
+            latestTradingDay = dateDf.tail(2)["date"].iloc[0]
+        return latestTradingDay

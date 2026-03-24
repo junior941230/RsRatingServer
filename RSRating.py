@@ -27,7 +27,7 @@ def calc_weighted_score(close: pd.Series) -> pd.Series:
     return weighted_score
 
 
-def caculate_rs_rating():
+def calculateRsRating():
     """計算每天所有股票的 RS Rating，並存成 daily_rs_table.pkl"""
     all_stock_scores = []
     files = os.listdir("data")
@@ -75,7 +75,7 @@ def caculate_rs_rating():
     # 存檔
     today = datetime.now().strftime("%Y-%m-%d")
     big_df.to_pickle(f"cache/{today}_RS.pkl")
-
+    return big_df
 
 if __name__ == "__main__":
-    caculate_rs_rating()
+    calculateRsRating()

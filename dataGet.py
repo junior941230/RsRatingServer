@@ -36,7 +36,7 @@ def getAllHistoryAdjustedPrices():
     if latestCacheDate != latestTradingDate:
         print("快取資料不是最新的，將從 API 取得最新資料")
         if os.path.exists("data"):
-            os.removedirs("data")
+            os.rmdir("data")
         getAllTaiwanStockInfo = api.getAllTaiwanStockInfo()
         if getAllTaiwanStockInfo is None:
             print("無法取得台灣股票資訊")
@@ -58,7 +58,12 @@ def getAllHistoryAdjustedPrices():
                 print(f"無法取得 {stockId} 的資料")
         files = os.listdir("data")
         print(f"完成，總共處理了 {len(files)} 檔股票資料")
+        return True
     else:
         print("快取資料已經是最新的，直接使用快取資料")
         files = os.listdir("data")
         print(f"共處理了 {len(files)} 檔股票資料")
+        return False
+
+if __name__ == "__main__":
+    getAllHistoryAdjustedPrices()
