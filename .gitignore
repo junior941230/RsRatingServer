@@ -1,3 +1,5 @@
 token.json
 cache/
 data/
+RsServer/
+__pycache__/
