@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from datetime import datetime
 
 
 def calc_weighted_score(close: pd.Series) -> pd.Series:
@@ -26,9 +27,9 @@ def calc_weighted_score(close: pd.Series) -> pd.Series:
     return weighted_score
 
 
-if __name__ == "__main__":
+def caculate_rs_rating():
+    """計算每天所有股票的 RS Rating，並存成 daily_rs_table.pkl"""
     all_stock_scores = []
-
     files = os.listdir("data")
 
     for file in files:
@@ -71,7 +72,10 @@ if __name__ == "__main__":
     # 排序
     big_df = big_df.sort_values(["date", "rsRating"], ascending=[True, False])
 
-    print(big_df)
-
     # 存檔
-    big_df.to_pickle("daily_rs_table.pkl")
+    today = datetime.now().strftime("%Y-%m-%d")
+    big_df.to_pickle(f"cache/{today}_RS.pkl")
+
+
+if __name__ == "__main__":
+    caculate_rs_rating()
