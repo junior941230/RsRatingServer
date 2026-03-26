@@ -36,7 +36,8 @@ def getAllHistoryAdjustedPrices():
     if latestCacheDate != latestTradingDate:
         print("快取資料不是最新的，將從 API 取得最新資料")
         if os.path.exists("data"):
-            os.rmdir("data")
+            for file in os.listdir("data"):
+                os.remove(os.path.join("data", file))
         getAllTaiwanStockInfo = api.getAllTaiwanStockInfo()
         if getAllTaiwanStockInfo is None:
             print("無法取得台灣股票資訊")

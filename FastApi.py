@@ -34,10 +34,13 @@ def reloadDataAndCalculateRS():
             print("完成更新快取資料")
     except Exception as e:
         print(f"排程任務出錯: {e}")
-
 # 設定排程
 scheduler.add_job(reloadDataAndCalculateRS, 'cron',hour=15, minute=0,id="dailyRsRatingUpdate")
 scheduler.start()
+
+job = scheduler.get_job("dailyRsRatingUpdate")
+if job:
+    job.modify(next_run_time=datetime.now())
 
 @app.get("/")
 async def root():
@@ -46,8 +49,8 @@ async def root():
         "lastUpdated": str(cachedData["lastUpdated"]) if cachedData["lastUpdated"] else "Never"
     }
 
-@app.get("/rsRating/{startDate}")
-async def getRsRating(startDate: str):
+@app.get("/rsRating")
+async def getRsRating():
     # 1. 僅從快取中取出原始資料，縮短 Lock 時間
     with dataLock:
         fullDf = cachedData["df"].copy()
@@ -56,11 +59,10 @@ async def getRsRating(startDate: str):
         raise HTTPException(status_code=404, detail="Data is not ready yet.")
 
     try:
-        # 2. 進行資料篩選
-        filteredDf = fullDf[fullDf['date'] >= startDate]
-        
-        if filteredDf.empty:
-            return {"message": "No data found for the given start date."}
+        # 2. 篩選資料(五年內)，這部分不需要 Lock，因為我們已經有 fullDf 的副本了
+        filteredDf = fullDf[fullDf['date'] >= (pd.Timestamp.now() - pd.DateOffset(years=5)).strftime('%Y-%m-%d')]
+        filteredDf = filteredDf[['stock_id', 'date', 'rsRating']]
+        filteredDf['rsRating'] = filteredDf['rsRating'].astype('int8')
 
         # 3. 序列化
         buffer = io.BytesIO()
