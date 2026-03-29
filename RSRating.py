@@ -3,19 +3,7 @@ import pandas as pd
 import numpy as np
 
 
-def buildFeatures(df):
-    df["roc20"] = df["close"].pct_change(5)  # 5天的報酬率
-    df["roc60"] = df["close"].pct_change(20)  # 20天的報酬率
-
-    df["ma5"] = df["close"].rolling(5).mean()  # 5天的移動平均線
-    df["ma20"] = df["close"].rolling(20).mean()  # 20天的移動平均線
-
-    df["volatility"] = df["close"].pct_change().rolling(5).std()  # 5天的波動率
-
-    return df
-
-
-def calc_weighted_score(close: pd.Series) -> pd.Series:
+def calc_weighted_score(close: np.ndarray) -> np.ndarray:
     """
     對單一股票的 close 價格序列，計算每天的 weightedScore
     使用：
@@ -24,17 +12,33 @@ def calc_weighted_score(close: pd.Series) -> pd.Series:
     9m = 189 天
     12m = 252 天
     """
-    roc3m = close / close.shift(63) - 1.0
-    roc6m = close / close.shift(126) - 1.0
-    roc9m = close / close.shift(189) - 1.0
-    roc12m = close / close.shift(252) - 1.0
+    n = close.shape[0]
+    weighted = np.full(n, np.nan, dtype=np.float32)
+    if n <= 252:
+        return weighted
 
-    return (
-        roc3m * 0.4 +
-        roc6m * 0.2 +
-        roc9m * 0.2 +
-        roc12m * 0.2
-    )
+    tail = close[252:]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        weighted[252:] = (
+            (tail / close[189:-63] - 1.0) * 0.4 +
+            (tail / close[126:-126] - 1.0) * 0.2 +
+            (tail / close[63:-189] - 1.0) * 0.2 +
+            (tail / close[:-252] - 1.0) * 0.2
+        ).astype(np.float32, copy=False)
+
+    return weighted
+
+
+def build_features_from_close(close: np.ndarray) -> dict[str, np.ndarray]:
+    close_series = pd.Series(close, copy=False)
+
+    return {
+        "roc20": close_series.pct_change(5).to_numpy(dtype=np.float32),
+        "roc60": close_series.pct_change(20).to_numpy(dtype=np.float32),
+        "ma5": close_series.rolling(5).mean().to_numpy(dtype=np.float32),
+        "ma20": close_series.rolling(20).mean().to_numpy(dtype=np.float32),
+        "volatility": close_series.pct_change().rolling(5).std().to_numpy(dtype=np.float32),
+    }
 
 
 def calculateRsRating():
@@ -52,27 +56,46 @@ def calculateRsRating():
 
         df = pd.read_pickle(entry.path)
 
-        if len(df) < 252:
+        if len(df) <= 252:
             continue
 
         # 只在真的沒排序時才排序
         if not df.index.is_monotonic_increasing:
             df = df.sort_index()
 
-        close = df["close"]
-        weighted_score = calc_weighted_score(close)
+        close_np = df["close"].to_numpy(dtype=np.float64, copy=False)
+        weighted_score = calc_weighted_score(close_np)
+        valid_mask = ~np.isnan(weighted_score)
+        if not valid_mask.any():
+            continue
 
-        # 直接建最小欄位，避免多餘 copy
+        features = build_features_from_close(close_np)
+
+        date_arr = df["date"].to_numpy()
+        entry_date = np.empty(date_arr.shape[0], dtype=object)
+        entry_date[:-1] = date_arr[1:]
+        entry_date[-1] = pd.NaT
+
+        open_arr = df["open"].to_numpy(dtype=np.float32, copy=False)
+        entry_price = np.empty(open_arr.shape[0], dtype=np.float32)
+        entry_price[:-1] = open_arr[1:]
+        entry_price[-1] = np.nan
+
+        # 僅保留 weightedScore 有效資料列，減少 concat 與 groupby 成本
         temp = pd.DataFrame({
             "stock_id": df["stock_id"].iloc[0],
-            "date": df["date"].to_numpy(),
-            "volume": df["Trading_Volume"].to_numpy(dtype=np.int32),
-            "weightedScore": weighted_score.to_numpy(dtype=np.float32),
-            "close": close.to_numpy(dtype=np.float32),
-            "entryDate": df["date"].shift(-1).to_numpy(),
-            "entryPrice": df["open"].shift(-1).to_numpy(dtype=np.float32),
+            "date": date_arr[valid_mask],
+            "volume": df["Trading_Volume"].to_numpy(dtype=np.int32, copy=False)[valid_mask],
+            "weightedScore": weighted_score[valid_mask],
+            "close": close_np.astype(np.float32, copy=False)[valid_mask],
+            "entryDate": entry_date[valid_mask],
+            "entryPrice": entry_price[valid_mask],
+            "roc20": features["roc20"][valid_mask],
+            "roc60": features["roc60"][valid_mask],
+            "ma5": features["ma5"][valid_mask],
+            "ma20": features["ma20"][valid_mask],
+            "volatility": features["volatility"][valid_mask],
         })
-        temp = buildFeatures(temp)
         all_stock_scores.append(temp)
 
     if not all_stock_scores:
@@ -81,9 +104,6 @@ def calculateRsRating():
 
     # 一次合併
     big_df = pd.concat(all_stock_scores, ignore_index=True)
-
-    # 去除無法計算 weightedScore 的資料
-    big_df = big_df.dropna(subset=["weightedScore"])
 
     # 同一天排名
     big_df["rsRating"] = (
