@@ -1,6 +1,7 @@
 import requests
 import pandas as pd
 import io,time
+from FinMindApi import FinMindApi
 choice = input("選擇任務:\n1. 立即執行排程任務\n2. 取得 RS Rating 資料\n請輸入選項 (1 或 2): ")
 start_time = time.time()
 if choice == "1":
@@ -11,3 +12,4 @@ elif choice == "2":
     print(df)
 print(f"任務完成，耗時 {time.time() - start_time:.2f} 秒")
 #journalctl -u fastapi.service -f
+#sudo systemctl start fastapi.service

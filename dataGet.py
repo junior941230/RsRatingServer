@@ -42,6 +42,11 @@ def getAllHistoryAdjustedPrices():
         if getAllTaiwanStockInfo is None:
             print("無法取得台灣股票資訊")
             exit()
+        df = api.getData("TAIEX", startDate, latestTradingDate)
+        if df is not None:
+            print("成功取得 TAIEX 的資料")
+        else:
+            print("無法取得 TAIEX 的資料")
         excludeCategories = ['Index', '受益證券', 'ETF', 'ETN', '存託憑證', '受益憑證']
         twseData = getAllTaiwanStockInfo[
             (getAllTaiwanStockInfo['type'] == 'twse') &

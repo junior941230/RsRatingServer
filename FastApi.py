@@ -37,7 +37,7 @@ def reloadDataAndCalculateRS():
 # 設定排程
 scheduler.add_job(reloadDataAndCalculateRS, 'cron',hour=15, minute=0,id="dailyRsRatingUpdate")
 scheduler.start()
-
+reloadDataAndCalculateRS() # 啟動時先執行一次，確保資料已經準備好
 job = scheduler.get_job("dailyRsRatingUpdate")
 if job:
     job.modify(next_run_time=datetime.now())

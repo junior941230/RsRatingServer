@@ -54,6 +54,9 @@ def calculateRsRating():
         temp = df[["stock_id", "weightedScore"]].copy()
         temp["stock_id"] = stock_id
         temp["date"] = df["date"]
+        # entryDate 為 date隔天
+        temp["entryDate"] = df["date"].shift(-1)
+        temp["entryPrice"] = df["open"].shift(-1)
 
         all_stock_scores.append(temp)
 
