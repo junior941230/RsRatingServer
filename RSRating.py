@@ -76,9 +76,10 @@ def calculateRsRating():
     big_df = big_df.sort_values(["date", "rsRating"], ascending=[True, False])
 
     # 存檔
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = big_df["date"].max().strftime("%Y-%m-%d")
     big_df.to_pickle(f"cache/{today}_RS.pkl")
     return big_df
+
 
 if __name__ == "__main__":
     calculateRsRating()

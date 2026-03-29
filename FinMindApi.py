@@ -91,12 +91,11 @@ class FinMindApi:
         # print("沒有找到快取資料，將從 API 取得")
         return None
 
-    def getAllTaiwanStockInfo(self):
+    def getAllTaiwanStockInfo(self, date):
         """取得所有台灣股票資訊，每日快取一次"""
         if not os.path.exists("cache"):
             os.makedirs("cache")
         files = os.listdir("cache")
-        date = datetime.datetime.today().strftime("%Y-%m-%d")
         fileName = f"{date}_TaiwanInfo.pkl"
         if fileName in files:
             print("當日以查詢")
@@ -114,7 +113,7 @@ class FinMindApi:
         today = datetime.datetime.today().strftime("%Y-%m-%d")
         dateDf = self.api.taiwan_stock_trading_date(end_date=today)
         latestTradingDay = dateDf.tail(1)["date"].iloc[0]
-        #如果在下午三點前就回傳前一天的日期，確保不會在交易日當天就從 API 取得資料，避免資料不完整
+        # 如果在下午三點前就回傳前一天的日期，確保不會在交易日當天就從 API 取得資料，避免資料不完整
         currentTime = datetime.datetime.now().time()
         if currentTime < datetime.time(15, 0):
             latestTradingDay = dateDf.tail(2)["date"].iloc[0]

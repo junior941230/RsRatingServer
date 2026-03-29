@@ -38,7 +38,7 @@ def getAllHistoryAdjustedPrices():
         if os.path.exists("data"):
             for file in os.listdir("data"):
                 os.remove(os.path.join("data", file))
-        getAllTaiwanStockInfo = api.getAllTaiwanStockInfo()
+        getAllTaiwanStockInfo = api.getAllTaiwanStockInfo(latestTradingDate)
         if getAllTaiwanStockInfo is None:
             print("無法取得台灣股票資訊")
             exit()
@@ -70,6 +70,7 @@ def getAllHistoryAdjustedPrices():
         files = os.listdir("data")
         print(f"共處理了 {len(files)} 檔股票資料")
         return False
+
 
 if __name__ == "__main__":
     getAllHistoryAdjustedPrices()
