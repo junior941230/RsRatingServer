@@ -29,12 +29,15 @@ def calc_weighted_score(close: np.ndarray) -> np.ndarray:
     return weighted
 
 
+def caculate_delta_rs(rs):
+
+
 def build_features_from_close(close: np.ndarray) -> dict[str, np.ndarray]:
     close_series = pd.Series(close, copy=False)
 
     return {
-        "roc20": close_series.pct_change(5).to_numpy(dtype=np.float32),
-        "roc60": close_series.pct_change(20).to_numpy(dtype=np.float32),
+        "roc5": close_series.pct_change(5).to_numpy(dtype=np.float32),
+        "roc20": close_series.pct_change(20).to_numpy(dtype=np.float32),
         "ma5": close_series.rolling(5).mean().to_numpy(dtype=np.float32),
         "ma20": close_series.rolling(20).mean().to_numpy(dtype=np.float32),
         "volatility": close_series.pct_change().rolling(5).std().to_numpy(dtype=np.float32),
